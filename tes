@@ -1,0 +1,74 @@
+#include "get_next_line.h"
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+
+void create_file(const char *filename, const char *content) 
+{
+    int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+    if (fd == -1) {
+        perror("Error creating file");
+        exit(EXIT_FAILURE);
+    }
+    write(fd, content, strlen(content));
+    close(fd);
+}
+
+void run_tests(int fd, const char *source) 
+{
+    char *line;
+    int line_number = 1;
+
+    printf("\nTesting %s:\n", source);
+
+    while ((line = get_next_line(fd)) != NULL) {
+        printf("Line %d: %s\n", line_number++, line);
+        free(line);
+    }
+    close(fd);
+}
+
+int main(void) 
+{
+    create_file("large_buffer.txt", "This is a line with a large buffer size.\n");
+    create_file("small_buffer.txt", "Small buffer.\n");
+    create_file("exact_buffer.txt", "Exact buffer.\n");
+    create_file("one_byte_diff.txt", "Line with buffer difference of 1 byte.\n");
+    create_file("stdin_input.txt", "Line from stdin.\n");
+    create_file("long_line.txt", "This is a very long line with more than 2k characters.\n");
+    create_file("short_line.txt", "Shrt\n");
+    create_file("empty_line.txt", "\n");
+
+    int fd_large_buffer = open("large_buffer.txt", O_RDONLY);
+    int fd_small_buffer = open("small_buffer.txt", O_RDONLY);
+    int fd_exact_buffer = open("exact_buffer.txt", O_RDONLY);
+    int fd_one_byte_diff = open("one_byte_diff.txt", O_RDONLY);
+    int fd_stdin_input = open("stdin_input.txt", O_RDONLY);
+    int fd_long_line = open("long_line.txt", O_RDONLY);
+    int fd_short_line = open("short_line.txt", O_RDONLY);
+    int fd_empty_line = open("empty_line.txt", O_RDONLY);
+
+    if (fd_large_buffer == -1 || fd_small_buffer == -1 || fd_exact_buffer == -1 ||
+        fd_one_byte_diff == -1 || fd_stdin_input == -1 || fd_long_line == -1 ||
+        fd_short_line == -1 || fd_empty_line == -1) {
+        perror("Error opening generated file");
+        return (EXIT_FAILURE);
+    }
+
+    run_tests(fd_large_buffer, "large_buffer.txt");
+    run_tests(fd_small_buffer, "small_buffer.txt");
+    run_tests(fd_exact_buffer, "exact_buffer.txt");
+    run_tests(fd_one_byte_diff, "one_byte_diff.txt");
+
+    printf("\nTesting stdin:\n");
+    run_tests(fd_stdin_input, "stdin_input.txt");
+
+    run_tests(fd_long_line, "long_line.txt");
+    run_tests(fd_short_line, "short_line.txt");
+    run_tests(fd_empty_line, "empty_line.txt");
+
+    return (EXIT_SUCCESS);
+}
